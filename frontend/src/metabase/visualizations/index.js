@@ -16,6 +16,7 @@ import ScatterPlot from "./visualizations/ScatterPlot";
 import Funnel from "./visualizations/Funnel";
 import Gauge from "./visualizations/Gauge";
 import ObjectDetail from "./visualizations/ObjectDetail";
+import Sankey from './visualizations/Sankey';
 import { t } from "ttag";
 import _ from "underscore";
 
@@ -146,5 +147,6 @@ registerVisualization(PieChart);
 registerVisualization(MapViz);
 registerVisualization(Funnel);
 registerVisualization(ObjectDetail);
+registerVisualization(Sankey);
 
 export default visualizations;
