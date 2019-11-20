@@ -78,8 +78,6 @@ import { sankeyCircular, sankeyJustify } from 'd3-sankey-circular';
 import colors from '../../lib/colors';
 import { getAvailableCanvasWidth, getAvailableCanvasHeight } from "../lib/utils";
 
-const MARGIN = 50;
-
 type SankeyProps = { //VisualizationProps & {
   chartType: "sankey",
   isScalarSeries: boolean,
@@ -378,6 +376,11 @@ function getPath(link) {
     return path(link);
 }
 
+const MARGIN_LEFT = 25;
+const MARGIN_RIGHT = 25;
+const MARGIN_TOP = 25;
+const MARGIN_BOTTOM = 75;
+
 function renderSandkey(element, sankeyData, width, height) {
     const { nodes, links } = sankeyCircular()
         .nodeAlign(sankeyJustify)
@@ -387,7 +390,7 @@ function renderSandkey(element, sankeyData, width, height) {
 
     const getColor = getColorSelector(sankeyData.nodes.length);
 
-    const chart = d3.select(element).append('svg').attr('viewBox', [-MARGIN/2,-MARGIN/2,width+MARGIN,height+MARGIN]);
+    const chart = d3.select(element).append('svg').attr('viewBox', [-MARGIN_LEFT,-MARGIN_TOP,width+MARGIN_RIGHT+MARGIN_LEFT,height+MARGIN_BOTTOM+MARGIN_TOP]);
     // Draw the nodes
     chart.append('g').attr('stroke','none')
         .selectAll('rect')
@@ -417,26 +420,26 @@ function renderSandkey(element, sankeyData, width, height) {
     link.append('title').text(d => `${d.source.name} - ${d.target.name}: ${d.value}` );
 
     // Node names
-    chart.append('g').style('font', '12px sans-serif')
+    chart.append('g').style('font', '1.2vmin sans-serif')
         .selectAll('text')
         .data(nodes)
         .enter().append('text')
             .attr("x", d => {
-                if (d.x0 < 50) { return d.x0; }
-                if (d.x0 > width - 50) { return d.x1; }
+                if (d.x0 < MARGIN_LEFT) { return d.x0; }
+                if (d.x0 > width - MARGIN_RIGHT) { return d.x1; }
                 return (d.x0 + d.x1) / 2;
             })
             .attr("y", d => d.y0 - 10)
             .attr("dy", "0.35em")
             .attr("text-anchor", d => {
-                if (d.x0 < 50) { return 'start'; }
-                if (d.x0 > width - 50) { return 'end'; }
+                if (d.x0 < MARGIN_LEFT) { return 'start'; }
+                if (d.x0 > width - MARGIN_RIGHT) { return 'end'; }
                 return 'middle';
             })
             .text(d => d.name);
 
     // Link info
-    chart.append('g').style('font', '12px sans-serif')
+    chart.append('g').style('font', '1.2vmin sans-serif')
         .selectAll('text')
         .data(links)
         .enter().append('text')
