@@ -1,6 +1,7 @@
 /* @flow weak */
 
 import Scalar from "./visualizations/Scalar";
+import ScalarSmall from "./visualizations/ScalarSmall";
 import SmartScalar from "./visualizations/SmartScalar";
 import Progress from "./visualizations/Progress";
 import Table from "./visualizations/Table";
@@ -132,6 +133,7 @@ const extractRemappedColumns = data => {
 };
 
 registerVisualization(Scalar);
+registerVisualization(ScalarSmall);
 registerVisualization(SmartScalar);
 registerVisualization(Progress);
 registerVisualization(Gauge);
