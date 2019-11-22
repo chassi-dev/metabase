@@ -290,8 +290,7 @@ function getYAxisSplitLeftAndRight(series, yAxisSplit, yExtents) {
 // THIS FUNCTION HAS A LOT OF METABASE STUFF MUCH MAY BE AB TO BE PULLED OUT
 function controlChartRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
     const { width, height, data } = props;
-    // console.warn('props', props);
-    console.warn('d3',d3);
+    console.warn('props', props);
 
     /*
     /   THIS SECTION USES METABASE CODE ABOVE
@@ -352,6 +351,8 @@ import {
   GRAPH_AXIS_SETTINGS,
 } from "../lib/settings/graph";
 
+import { ZONE_SETTINGS } from '../lib/settings/zones';
+
 export default class Control extends ControlChart {
     static uiName = `Control`;
     static identifier = "control";
@@ -361,6 +362,7 @@ export default class Control extends ControlChart {
 
     static settings = {
         // Sets the data used by the axiseds. MANDATOR
+        ...ZONE_SETTINGS,
         ...GRAPH_DATA_SETTINGS,
         // Next 3 settings are under the display tab.
         // ...LINE_SETTINGS,
@@ -415,7 +417,6 @@ const getXAxis = xScale => {
 const getYAxis = (yScale, side = 'left') => {
     return chart => {
         let axis = d3.svg.axis().scale(yScale)
-        console.warn('axis',axis);
         axis = side === 'left' ? axis.orient('left') : axis.orient('right');
         const translate = side === 'left' ? MARGIN_LEFT : WIDTH-MARGIN_RIGHT;
         chart.append('g').attr('transform', `translate(${translate}, 0)`)
