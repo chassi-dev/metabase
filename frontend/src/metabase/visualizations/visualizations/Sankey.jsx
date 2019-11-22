@@ -282,7 +282,8 @@ function getYAxisSplitLeftAndRight(series, yAxisSplit, yExtents) {
 }
 
 function sankeyRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
-    const { width, height } = props;
+    const { width, height, data } = props;
+    console.warn('props', props);
     checkSeriesIsValid(props);
 
     // HOLDS THE WARNINGS FROUND IN DATA
