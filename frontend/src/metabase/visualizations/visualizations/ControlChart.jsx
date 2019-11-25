@@ -289,8 +289,8 @@ function getYAxisSplitLeftAndRight(series, yAxisSplit, yExtents) {
 
 // THIS FUNCTION HAS A LOT OF METABASE STUFF MUCH MAY BE AB TO BE PULLED OUT
 function controlChartRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
-    const { width, height, data } = props;
-    console.warn('props', props);
+    const { width, height, data, settings } = props;
+    // console.warn('props', props);
 
     /*
     /   THIS SECTION USES METABASE CODE ABOVE
@@ -337,7 +337,7 @@ function controlChartRenderer(element: Element, props: SankeyProps, ): Deregiste
     // parent.compose(charts);
     // parent.render();
 
-    renderControlChart(element, testData, standardZones, width, height);
+    renderControlChart(element, testData, settings['graph.zones'], width, height);
     return () => {
       // dc.chartRegistry.deregister(parent);
     };
