@@ -8,6 +8,7 @@ import LegendHeader from "./LegendHeader";
 import { TitleLegendHeader } from "./TitleLegendHeader";
 
 import "./LineAreaBarChart.css";
+import './ControlChart.css';
 
 import {
   isNumeric,

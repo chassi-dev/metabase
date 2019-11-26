@@ -290,7 +290,7 @@ function getYAxisSplitLeftAndRight(series, yAxisSplit, yExtents) {
 // THIS FUNCTION HAS A LOT OF METABASE STUFF MUCH MAY BE AB TO BE PULLED OUT
 function controlChartRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
     const { width, height, data, settings } = props;
-    // console.warn('props', props);
+    console.warn('props', props);
 
     /*
     /   THIS SECTION USES METABASE CODE ABOVE
@@ -353,6 +353,8 @@ import {
 
 import { ZONE_SETTINGS } from '../lib/settings/zones';
 
+console.warn('zone settings', ZONE_SETTINGS);
+
 export default class Control extends ControlChart {
     static uiName = `Control`;
     static identifier = "control";
@@ -409,8 +411,10 @@ const getYRange = data => {
 
 const getXAxis = xScale => {
     return chart => {
-        chart.append('g').attr('transform', `translate(0,${HEIGHT - MARGIN_BOTTOM})`)
-            .call(d3.svg.axis().scale(xScale).orient('bottom').innerTickSize(5).tickFormat( d => d ));
+        chart.append('g')
+            .attr('transform', `translate(0,${HEIGHT - MARGIN_BOTTOM})`)
+            .attr('class', 'axis x')
+            .call(d3.svg.axis().scale(xScale).orient('bottom').innerTickSize(2).tickFormat( d => d ));
     }
 }
 
@@ -419,19 +423,30 @@ const getYAxis = (yScale, side = 'left') => {
         let axis = d3.svg.axis().scale(yScale)
         axis = side === 'left' ? axis.orient('left') : axis.orient('right');
         const translate = side === 'left' ? MARGIN_LEFT : WIDTH-MARGIN_RIGHT;
-        chart.append('g').attr('transform', `translate(${translate}, 0)`)
-            .call(axis.tickSize(5).tickFormat( d => d ));
+        chart.append('g')
+            .attr('transform', `translate(${translate}, 0)`)
+            .attr('class', 'axis y')
+            .call(axis.innerTickSize(2).tickFormat( d => d ));
     }
 }
 
-const getLine = (data, xScale, yScale) => {
-    return data.reduce( (line, item, index) => {
-        const path = index === 0 ? `M${xScale(item.x)},${yScale(item.value)}` : `L${xScale(item.x)},${yScale(item.value)}`
-        return `${line}${path}`;
-    }, '');
+const getLines = (data, xScale, yScale) => {
+    let prevItem = null;
+    return data.reduce( (lines, item, index) => {
+        if (index === 0) {
+            prevItem = item;
+            return lines;
+        }
+        const path = `M${xScale(prevItem.x)},${yScale(prevItem.value)}L${xScale(item.x)},${yScale(item.value)}`;
+        prevItem = item;
+        return [
+            ...lines,
+            path,
+        ]
+    }, []);
 }
 
-const getZoneRects = (zones, xScale, yScale, dataCount) => {
+const getZoneRects = (zones = [], xScale, yScale, dataCount) => {
     return zones.reduce( (rects, zone) => {
         if (!zone.range) return rects;
         const color = d3.rgb(zone.color)
@@ -457,10 +472,13 @@ function renderControlChart(element, data, zones, width, height) {
     const yScale = getYScale(yRange);
     const xAxis = getXAxis(xScale);
     const yAxis = getYAxis(yScale);
-    const line = getLine(data, xScale, yScale);
+    const lines = getLines(data, xScale, yScale);
     const zoneRects = getZoneRects(zones, xScale, yScale, data.length);
 
-    const chart = d3.select(element).append('svg').attr('viewBox', [0,0,WIDTH,HEIGHT]);
+    const chart = d3.select(element)
+                    .append('svg')
+                    .attr('viewBox', [0,0,WIDTH,HEIGHT])
+                    .attr('class', 'chassi-control-chart');
 
     // Draw zone Rects
     chart.selectAll('rect')
@@ -474,33 +492,37 @@ function renderControlChart(element, data, zones, width, height) {
             .attr('fill', d => d.color)
 
     // Draw zone lines
-    chart.selectAll('path')
+    chart.selectAll('path.zone-line')
         .data(zones)
         .enter().append('path')
+            .attr('class', 'zone-line')
             .attr('d', d => `M${xScale(0)},${yScale(d.level)},L${xScale(data.length)},${yScale(d.level)}`)
             .attr('stroke', d => d.color)
             .attr('stroke-width', 2)
 
     // Draw Line
-    chart.selectAll('path')
-        .data(line)
+    chart.selectAll('path.line')
+        .data(lines)
         .enter().append('path')
-            .attr('d', line)
+            .attr('class','line')
+            .attr('d', line => line)
             .attr('stroke-width', 2)
-            .attr('stroke', 'black')
-            .attr('fill','none');
+            .attr('stroke', '#444')
+            .attr('fill','none')
 
+    // Draw points
     chart.selectAll('circle')
         .data(data)
         .enter().append('circle')
             .attr('cx', d => xScale(d.x))
             .attr('cy', d => yScale(d.value))
-            .attr('r', 5)
+            .attr('r', 2)
+            .attr('stroke-width', 2)
             .attr('stroke', '#4682b4')
-            .attr('fill', '#4682b4')
+            .attr('fill', '#ffffff')
 
-    chart.append('g').call(xAxis);
-    chart.append('g').call(yAxis);
+    chart.call(xAxis);
+    chart.call(yAxis);
 }
 
 // TEST DATA ONLY

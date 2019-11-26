@@ -4,10 +4,14 @@ export const ZONE_SETTINGS = {
     "graph.zones": {
         section: t`Zones`,
         widget: "zones",
-        getProps: (a, vizSettings) => {
+        getProps: () => {
             return {
                 addAnother: t`Add another zone...`,
             };
-        }
+        },
+        getDefault: (series, vizSettings) => {
+            console.warn('series', series);
+            return [];
+        },
     }
 }
