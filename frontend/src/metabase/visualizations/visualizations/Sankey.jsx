@@ -281,32 +281,47 @@ function getYAxisSplitLeftAndRight(series, yAxisSplit, yExtents) {
   }));
 }
 
+
+
+// ABOVE IS ALL METABASE STUFF KEPT JUST TO NOT BREAK THE WORLD AND FOR REFERENCE
+//
+// BELOW IS WHAT WE NEED TO RUN OUR CHART
+
+// THIS FUNCTION HAS A LOT OF METABASE STUFF MUCH MAY BE AB TO BE PULLED OUT
 function sankeyRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
     const { width, height, data } = props;
     console.warn('props', props);
-    checkSeriesIsValid(props);
 
-    // HOLDS THE WARNINGS FROUND IN DATA
-    const warnings = {};
-    // CALLBACK FUNCTION TO SET WARNINGS FOUND
-    const warn = ({ key, text }) => {
-      warnings[key] = warnings[key] || text;
-    };
+    /*
+    /   THIS SECTION USES METABASE CODE ABOVE
+    */
+    // checkSeriesIsValid(props);
+    //
+    // // HOLDS THE WARNINGS FROUND IN DATA
+    // const warnings = {};
+    // // CALLBACK FUNCTION TO SET WARNINGS FOUND
+    // const warn = ({ key, text }) => {
+    //   warnings[key] = warnings[key] || text;
+    // };
+    //
+    // // PARSES THE SERIES DATA (props.series.map( ({data}) => ...)).
+    // let datas = getDatas(props, warn);
+    // let xAxisProps = getXAxisProps(props, datas, warn);
+    //
+    // datas = fillMissingValuesInDatas(props, xAxisProps, datas);
+    // xAxisProps = getXAxisProps(props, datas, warn);
+    //
+    // const {
+    //   dimension,
+    //   groups,
+    //   yExtents,
+    // } = getDimensionsAndGroupsAndUpdateSeriesDisplayNames(props, datas, warn);
+    //
+    // const yAxisProps = getYAxisProps(props, yExtents, datas);
 
-    // PARSES THE SERIES DATA (props.series.map( ({data}) => ...)).
-    let datas = getDatas(props, warn);
-    let xAxisProps = getXAxisProps(props, datas, warn);
-
-    datas = fillMissingValuesInDatas(props, xAxisProps, datas);
-    xAxisProps = getXAxisProps(props, datas, warn);
-
-    const {
-      dimension,
-      groups,
-      yExtents,
-    } = getDimensionsAndGroupsAndUpdateSeriesDisplayNames(props, datas, warn);
-
-    const yAxisProps = getYAxisProps(props, yExtents, datas);
+    /*
+    / THIS IS FOR RENDERING WITH DC. WE ARE NOT DOING THAT RIGHT NOW
+    */
     // const parent = dc.compositeChart(parentElement);
     // console.warn('parent', parent);
     // parent.render = () => {
