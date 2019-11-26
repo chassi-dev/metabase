@@ -11,6 +11,8 @@ import ChartSettingFieldPicker from "metabase/visualizations/components/settings
 import ChartSettingFieldsPicker from "metabase/visualizations/components/settings/ChartSettingFieldsPicker";
 import ChartSettingColorPicker from "metabase/visualizations/components/settings/ChartSettingColorPicker";
 import ChartSettingColorsPicker from "metabase/visualizations/components/settings/ChartSettingColorsPicker";
+import ChartSettingZone from "metabase/visualizations/components/settings/ChartSettingZone";
+import ChartSettingZones from "metabase/visualizations/components/settings/ChartSettingZones";
 
 import MetabaseAnalytics from "metabase/lib/analytics";
 
@@ -75,6 +77,8 @@ const WIDGETS = {
   fields: ChartSettingFieldsPicker,
   color: ChartSettingColorPicker,
   colors: ChartSettingColorsPicker,
+  zone: ChartSettingZone,
+  zones: ChartSettingZones,
 };
 
 export function getComputedSettings(

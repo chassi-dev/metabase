@@ -1,4 +1,4 @@
-import SankeyChart from "../components/SankeyChart.jsx";/* @flow weak */
+import ControlChart from "../components/ControlChart.jsx";/* @flow weak */
 
 import crossfilter from "crossfilter";
 import d3 from "d3";
@@ -287,56 +287,36 @@ function getYAxisSplitLeftAndRight(series, yAxisSplit, yExtents) {
 //
 // BELOW IS WHAT WE NEED TO RUN OUR CHART
 
-// THIS FUNCTION HAS A LOT OF METABASE STUFF MUCH MAY BE AB TO BE PULLED OUT
-function sankeyRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
-    const { width, height, data } = props;
-    console.warn('props', props);
 
-    /*
-    /   THIS SECTION USES METABASE CODE ABOVE
-    */
-    // checkSeriesIsValid(props);
-    //
-    // // HOLDS THE WARNINGS FROUND IN DATA
-    // const warnings = {};
-    // // CALLBACK FUNCTION TO SET WARNINGS FOUND
-    // const warn = ({ key, text }) => {
-    //   warnings[key] = warnings[key] || text;
-    // };
-    //
-    // // PARSES THE SERIES DATA (props.series.map( ({data}) => ...)).
-    // let datas = getDatas(props, warn);
-    // let xAxisProps = getXAxisProps(props, datas, warn);
-    //
-    // datas = fillMissingValuesInDatas(props, xAxisProps, datas);
-    // xAxisProps = getXAxisProps(props, datas, warn);
-    //
-    // const {
-    //   dimension,
-    //   groups,
-    //   yExtents,
-    // } = getDimensionsAndGroupsAndUpdateSeriesDisplayNames(props, datas, warn);
-    //
-    // const yAxisProps = getYAxisProps(props, yExtents, datas);
+function buildChartData(columnValues, xKey, yKey) {
+    if (!xKey || !yKey) return [];
+    const xValues = columnValues[xKey];
+    return xValues.reduce( (data, xValue, index) => {
+        return [
+            ...data,
+            {
+                x: xValue,
+                value: columnValues[yKey][index],
+                index,
+            }
+        ]
+    }, []);
+}
 
-    /*
-    / THIS IS FOR RENDERING WITH DC. WE ARE NOT DOING THAT RIGHT NOW
-    */
-    // const parent = dc.compositeChart(parentElement);
-    // console.warn('parent', parent);
-    // parent.render = () => {
-    //     renderSandkey(element, testData, width, height);
-    // }
-    // initChart(parent, element);
+function controlChartRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
+    const { width, height, data, settings } = props;
+    const columnValues = data.cols.reduce( (colVals, col, index) => {
+        const values = data.rows.map( row => row[index]);
+        return {
+            ...colVals,
+            [col.name]: values,
+        }
+    },{});
+    const xKey = settings['graph.dimensions'][0];
+    const yKey = settings['graph.metrics'][0];
+    const chartData = buildChartData(columnValues, xKey, yKey);
 
-    // parent.props = props;
-    // parent.settings = props.settings;
-    // parent.series = props.series;
-
-    // const charts = dc.barChart(parent);
-    // parent.compose(charts);
-    // parent.render();
-    renderSandkey(element, testData, width, height);
+    renderControlChart(element, chartData, settings['graph.zones'], width, height);
     return () => {
       // dc.chartRegistry.deregister(parent);
     };
@@ -350,210 +330,291 @@ import {
   GRAPH_AXIS_SETTINGS,
 } from "../lib/settings/graph";
 
-export default class Sankey extends SankeyChart {
-    static uiName = `Sankey`;
-    static identifier = "sankey";
-    static iconName = "sankey";
+import { ZONE_SETTINGS } from '../lib/settings/zones';
+
+export default class Control extends ControlChart {
+    static uiName = `Control`;
+    static identifier = "control";
+    static iconName = "control";
     // UKNOWN WHAT noun IS USED FOR
-    static noun = `Sankey chart`;
+    static noun = `Control chart`;
 
     static settings = {
-        // Sets the data used by the axiseds. MANDATOR
+        ...ZONE_SETTINGS,
         ...GRAPH_DATA_SETTINGS,
-        // Next 3 settings are under the display tab.
-        // ...LINE_SETTINGS,
-        // ...GRAPH_GOAL_SETTINGS,
-        // ...GRAPH_COLORS_SETTINGS,
-        // Covers the AXIS TAB and LABEL TAB
-        // ...GRAPH_AXIS_SETTINGS,
     };
 
-    static renderer = sankeyRenderer;
+    static renderer = controlChartRenderer;
 }
 
-function getColorSelector(total) {
-  // const colorScale = d3.scale.ordinal(d3.schemeCategory10);
-  // need to save based on a name
-  const startColor = d3.rgb(144,144,224).toString();
-  const endColor = d3.rgb(48,48,144).toString();
-  const colorScale = d3.scale.linear().domain([0,total-1]).range([startColor, endColor]);
-  return (index, darker) => {
-      let hexColor = colorScale(index);
-      if (darker) { hexColor = d3.rgb(hexColor).darker(3).toString(); }
-      return hexColor;
-  }
-}
-
-function getPath(link) {
-    if (link.circular) { return link.path; }
-    const path = sankeyLinkHorizontal()
-            .source( d => [d.source.x1, d.y0])
-            .target( d => [d.target.x0, d.y1])
-    return path(link);
-}
-
-const MARGIN_LEFT = 25;
+const WIDTH = 950;
+const HEIGHT = 600;
+const MARGIN_BOTTOM = 100;
+const MARGIN_LEFT = 50;
 const MARGIN_RIGHT = 25;
-const MARGIN_TOP = 25;
-const MARGIN_BOTTOM = 75;
+const MARGIN_TOP = 10;
 
-function renderSandkey(element, sankeyData, width, height) {
-    const { nodes, links } = sankeyCircular()
-        .nodeAlign(sankeyJustify)
-        .nodeWidth(15)
-        .nodePadding(10)
-        .extent([[0,0],[width,height]])(sankeyData);
+const DATA_BUFFER_PCT = 10;
 
-    const getColor = getColorSelector(sankeyData.nodes.length);
+const getXScale = count => {
+    return d3.scale.linear()
+        .domain([0, count])
+        .range([MARGIN_LEFT, WIDTH - MARGIN_RIGHT]);
+}
 
-    const chart = d3.select(element).append('svg').attr('viewBox', [-MARGIN_LEFT,-MARGIN_TOP,width+MARGIN_RIGHT+MARGIN_LEFT,height+MARGIN_BOTTOM+MARGIN_TOP]);
-    // Draw the nodes
-    chart.append('g').attr('stroke','none')
-        .selectAll('rect')
-        .data(nodes)
+const getYScale = (yRange, bufferPct = DATA_BUFFER_PCT) => {
+    const {max, min} = yRange;
+    const buffer = (max - min) * (bufferPct/100);
+    return d3.scale.linear()
+        .domain([min - buffer, max +  buffer])
+        .range([HEIGHT - MARGIN_BOTTOM, MARGIN_TOP]);
+}
+
+const getYRange = data => {
+    return data.reduce( (range, {value}) => {
+        let { max, min } = range;
+        if (max < value) max = value;
+        if (min > value) min = value;
+        return {max, min};
+    }, {max: -Infinity, min:Infinity});
+}
+
+const getXAxis = (xScale, data) => {
+    return chart => {
+        chart.append('g')
+            .attr('transform', `translate(0,${HEIGHT - MARGIN_BOTTOM})`)
+            .attr('class', 'axis x')
+            .call(d3.svg.axis().scale(xScale).orient('bottom').innerTickSize(2).tickFormat( d => {
+                const xd = data[d]
+                return xd ? xd.x : '';
+            }));
+    }
+}
+
+const getYAxis = (yScale, side = 'left') => {
+    return chart => {
+        let axis = d3.svg.axis().scale(yScale)
+        axis = side === 'left' ? axis.orient('left') : axis.orient('right');
+        const translate = side === 'left' ? MARGIN_LEFT : WIDTH-MARGIN_RIGHT;
+        chart.append('g')
+            .attr('transform', `translate(${translate}, 0)`)
+            .attr('class', 'axis y')
+            .call(axis.innerTickSize(2).tickFormat( d => d ));
+    }
+}
+
+const getLines = (data, xScale, yScale) => {
+    let prevItem = null;
+    return data.reduce( (lines, item, index) => {
+        if (index === 0) {
+            prevItem = item;
+            return lines;
+        }
+        const path = `M${xScale(prevItem.index)},${yScale(prevItem.value)}L${xScale(item.index)},${yScale(item.value)}`;
+        prevItem = item;
+        return [
+            ...lines,
+            path,
+        ]
+    }, []);
+}
+
+const getZoneRects = (zones = [], xScale, yScale, dataCount) => {
+    if (!zones) return [];
+    return zones.reduce( (rects, zone) => {
+        if (!zone.range) return rects;
+        const color = d3.rgb(zone.color)
+        color.opacity = .5
+        return [
+            ...rects,
+            {
+                x0: xScale(0),
+                x1: xScale(dataCount),
+                y0: yScale(zone.range[0]),
+                y1: yScale(zone.range[1]),
+                color: color.toString(),
+            }
+        ]
+    }, []);
+}
+
+function renderControlChart(element, data, zones, width, height) {
+    // The length of the data array is the number of series
+    const xScale = getXScale(data.length);
+    const yRange = getYRange(data);
+    const yScale = getYScale(yRange);
+    const xAxis = getXAxis(xScale,data);
+    const yAxis = getYAxis(yScale);
+    const lines = getLines(data, xScale, yScale);
+    const zoneRects = getZoneRects(zones, xScale, yScale, data.length);
+    const chart = d3.select(element)
+                    .append('svg')
+                    .attr('viewBox', [0,0,WIDTH,HEIGHT])
+                    .attr('class', 'chassi-control-chart');
+
+    // Draw zone Rects
+    chart.selectAll('rect')
+        .data(zoneRects)
         .enter().append('rect')
             .attr('x', d => d.x0)
             .attr('y', d => d.y0)
-            .attr('height', d => d.y1-d.y0)
-            .attr('width', d => d.x1-d.x0)
-            .attr('fill', (d,i) => getColor(i))
-            .attr('stroke', (d,i) => getColor(i, true))
-        .append('title')
-            .text(d => `${d.name} - ${d.value}`);
+            .attr('opacity', 0.5)
+            .attr('width', d => d.x1 - d.x0)
+            .attr('height', d => d.y1 - d.y0)
+            .attr('fill', d => d.color)
 
-    // Draw the names links
-    const link = chart.append('g').attr('fill','none')
-        .selectAll('g')
-        .data(links)
-        .enter().append('g')
-            .style('mix-blend-mode','multiply');
+    // Draw zone lines
+    chart.selectAll('path.zone-line')
+        .data(zones || [])
+        .enter().append('path')
+            .attr('class', 'zone-line')
+            .attr('d', d => `M${xScale(0)},${yScale(d.level)},L${xScale(data.length)},${yScale(d.level)}`)
+            .attr('stroke', d => d.color)
+            .attr('stroke-width', 2)
 
-    link.append('path').attr('d', getPath)
-        .attr('stroke', d => d.circular ? colors['saturated-red'] : d3.rgb(colors.white).darker(1).toString())
-        .attr('stroke-opacity', 0.5)
-        .attr('stroke-width', d => Math.max(2,d.width));
+    // Draw Line
+    chart.selectAll('path.line')
+        .data(lines)
+        .enter().append('path')
+            .attr('class','line')
+            .attr('d', line => line)
+            .attr('stroke-width', 2)
+            .attr('stroke', '#555')
+            .attr('fill','none')
 
-    link.append('title').text(d => `${d.source.name} - ${d.target.name}: ${d.value}` );
+    // Draw points
+    chart.selectAll('circle')
+        .data(data)
+        .enter().append('circle')
+            .attr('cx', d => xScale(d.index))
+            .attr('cy', d => yScale(d.value))
+            .attr('r', 2)
+            .attr('stroke-width', 2)
+            .attr('stroke', '#4682b4')
+            .attr('fill', '#ffffff')
 
-    // Node names
-    chart.append('g').style('font', '1.2vmin sans-serif')
-        .selectAll('text')
-        .data(nodes)
-        .enter().append('text')
-            .attr("x", d => {
-                if (d.x0 < MARGIN_LEFT) { return d.x0; }
-                if (d.x0 > width - MARGIN_RIGHT) { return d.x1; }
-                return (d.x0 + d.x1) / 2;
-            })
-            .attr("y", d => d.y0 - 10)
-            .attr("dy", "0.35em")
-            .attr("text-anchor", d => {
-                if (d.x0 < MARGIN_LEFT) { return 'start'; }
-                if (d.x0 > width - MARGIN_RIGHT) { return 'end'; }
-                return 'middle';
-            })
-            .text(d => d.name);
-
-    // Link info
-    chart.append('g').style('font', '1.2vmin sans-serif')
-        .selectAll('text')
-        .data(links)
-        .enter().append('text')
-            .attr('x', d => d.source.x1 + 5)
-            .attr('y', d => d.y0)
-            .attr("dy", "0.35em")
-            .attr('text-anchor', 'start')
-            .text((d) => {
-                const percent = `${d3.format('.0%')(d.value/d.source.value)}`;
-                return `${d.value} (${percent})`;
-            });
+    chart.call(xAxis);
+    chart.call(yAxis);
 }
 
 // TEST DATA ONLY
-const testData = {
-    nodes: [
-        {
-            name: 'Ready',
-        },
-        {
-            name: 'Active',
-        },
-        {
-            name: 'Exploring',
-        },
-        {
-            name: 'Paused',
-        },
-        {
-            name: 'At-Risk',
-        },
-        {
-            name: 'Abandoned',
-        },
-        {
-            name: 'Completed',
-        },
-    ],
-    links: [
-        {
-            source:0,
-            target:1,
-            value:50,
-        },
-        {
-            source:0,
-            target:2,
-            value:150,
-        },
-        {
-            source:1,
-            target:6,
-            value:100,
-        },
-        {
-            source:1,
-            target:5,
-            value:50,
-        },
-        {
-            source:1,
-            target:3,
-            value:35,
-        },
-        {
-            source:2,
-            target:1,
-            value:40,
-        },
-        {
-            source:2,
-            target:5,
-            value:90,
-        },
-        {
-            source:1,
-            target:4,
-            value:25,
-        },
-        {
-            source:2,
-            target:4,
-            value:20,
-        },
-        {
-            source:4,
-            target:5,
-            value:10,
-        },
-        {
-            source:4,
-            target:6,
-            value:35,
-        },
-        {
-            source:4,
-            target:1,
-            value:50,
-        },
-    ]
-};
+const testData = [
+    {
+        x: 1,
+        value: 100,
+    },
+    {
+        x: 2,
+        value: 125,
+    },
+    {
+        x: 3,
+        value: 75,
+    },
+    {
+        x: 4,
+        value: 120,
+    },
+    {
+        x: 5,
+        value: 40,
+    },
+    {
+        x: 6,
+        value: 75,
+    },
+    {
+        x: 7,
+        value: 110,
+    },
+    {
+        x: 8,
+        value: 60,
+    },
+    {
+        x: 9,
+        value: 155,
+    },
+    {
+        x: 10,
+        value: 95,
+    },
+    {
+        x: 11,
+        value: 100,
+    },
+    {
+        x: 12,
+        value: 125,
+    },
+    {
+        x: 13,
+        value: 75,
+    },
+    {
+        x: 14,
+        value: 120,
+    },
+    {
+        x: 15,
+        value: 40,
+    },
+    {
+        x: 16,
+        value: 75,
+    },
+    {
+        x: 17,
+        value: 110,
+    },
+    {
+        x: 18,
+        value: 60,
+    },
+    {
+        x: 19,
+        value: 150,
+    },
+    {
+        x: 20,
+        value: 95,
+    },
+]
+
+const standardZones = [
+    {
+        // range: [null,150],
+        level: 150,
+        color: '#ff0400', //'#da5553',
+    },
+    {
+        range: [150,130],
+        level: 130,
+        color: '#CF3935', //'#dc9493'
+    },
+    {
+        range: [130, 110],
+        level: 110,
+        color: '#fde455', //'#f7ecad'
+    },
+    {
+        range: [110,70],
+        level: 90,
+        color: '#7bb31f', //'#b8d090'
+    },
+    {
+        range: [70,50],
+        level: 70,
+        color: '#fde455', //'#f7ecad'
+    },
+    {
+        range: [50, 30],
+        level: 50,
+        color: '#CF3935', //'#dc9493'
+    },
+    // {
+    //     level: 0,
+    //     color: '#ff0400', //'#da5553'
+    // },
+
+]

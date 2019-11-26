@@ -1,0 +1,13 @@
+.chassi-control-chart .x.axis path,
+.chassi-control-chart .y.axis path {
+    stroke-width: 1;
+    fill: none;
+    stroke: #c7cfd4;
+}
+
+.chassi-control-chart .x.axis .tick text,
+.chassi-control-chart .y.axis .tick text {
+    font-size: 12px;
+    font-family: sans-serif;
+    fill: #74838f;
+}

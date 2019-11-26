@@ -18,6 +18,7 @@ import Funnel from "./visualizations/Funnel";
 import Gauge from "./visualizations/Gauge";
 import ObjectDetail from "./visualizations/ObjectDetail";
 import Sankey from './visualizations/Sankey';
+import ControlChart from './visualizations/ControlChart';
 import { t } from "ttag";
 import _ from "underscore";
 
@@ -150,5 +151,6 @@ registerVisualization(MapViz);
 registerVisualization(Funnel);
 registerVisualization(ObjectDetail);
 registerVisualization(Sankey);
+registerVisualization(ControlChart);
 
 export default visualizations;
