@@ -93,7 +93,6 @@ class ChartSettingZone extends React.Component {
             className,
             title,
             onRemove,
-            key,
             index
         } = this.props;
 

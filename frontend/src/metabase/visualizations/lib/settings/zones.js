@@ -9,9 +9,6 @@ export const ZONE_SETTINGS = {
                 addAnother: t`Add another zone...`,
             };
         },
-        getDefault: (series, vizSettings) => {
-            console.warn('series', series);
-            return [];
-        },
+        getDefault: () => [],
     }
 }

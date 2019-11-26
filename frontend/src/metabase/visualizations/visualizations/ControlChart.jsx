@@ -287,57 +287,36 @@ function getYAxisSplitLeftAndRight(series, yAxisSplit, yExtents) {
 //
 // BELOW IS WHAT WE NEED TO RUN OUR CHART
 
-// THIS FUNCTION HAS A LOT OF METABASE STUFF MUCH MAY BE AB TO BE PULLED OUT
+
+function buildChartData(columnValues, xKey, yKey) {
+    if (!xKey || !yKey) return [];
+    const xValues = columnValues[xKey];
+    return xValues.reduce( (data, xValue, index) => {
+        return [
+            ...data,
+            {
+                x: xValue,
+                value: columnValues[yKey][index],
+                index,
+            }
+        ]
+    }, []);
+}
+
 function controlChartRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
     const { width, height, data, settings } = props;
-    console.warn('props', props);
+    const columnValues = data.cols.reduce( (colVals, col, index) => {
+        const values = data.rows.map( row => row[index]);
+        return {
+            ...colVals,
+            [col.name]: values,
+        }
+    },{});
+    const xKey = settings['graph.dimensions'][0];
+    const yKey = settings['graph.metrics'][0];
+    const chartData = buildChartData(columnValues, xKey, yKey);
 
-    /*
-    /   THIS SECTION USES METABASE CODE ABOVE
-    */
-    // checkSeriesIsValid(props);
-    //
-    // // HOLDS THE WARNINGS FROUND IN DATA
-    // const warnings = {};
-    // // CALLBACK FUNCTION TO SET WARNINGS FOUND
-    // const warn = ({ key, text }) => {
-    //   warnings[key] = warnings[key] || text;
-    // };
-    //
-    // // PARSES THE SERIES DATA (props.series.map( ({data}) => ...)).
-    // let datas = getDatas(props, warn);
-    // let xAxisProps = getXAxisProps(props, datas, warn);
-    //
-    // datas = fillMissingValuesInDatas(props, xAxisProps, datas);
-    // xAxisProps = getXAxisProps(props, datas, warn);
-    //
-    // const {
-    //   dimension,
-    //   groups,
-    //   yExtents,
-    // } = getDimensionsAndGroupsAndUpdateSeriesDisplayNames(props, datas, warn);
-    //
-    // const yAxisProps = getYAxisProps(props, yExtents, datas);
-
-    /*
-    / THIS IS FOR RENDERING WITH DC. WE ARE NOT DOING THAT RIGHT NOW
-    */
-    // const parent = dc.compositeChart(parentElement);
-    // console.warn('parent', parent);
-    // parent.render = () => {
-    //     renderControlChart(element, testData, width, height);
-    // }
-    // initChart(parent, element);
-
-    // parent.props = props;
-    // parent.settings = props.settings;
-    // parent.series = props.series;
-
-    // const charts = dc.barChart(parent);
-    // parent.compose(charts);
-    // parent.render();
-
-    renderControlChart(element, testData, settings['graph.zones'], width, height);
+    renderControlChart(element, chartData, settings['graph.zones'], width, height);
     return () => {
       // dc.chartRegistry.deregister(parent);
     };
@@ -353,8 +332,6 @@ import {
 
 import { ZONE_SETTINGS } from '../lib/settings/zones';
 
-console.warn('zone settings', ZONE_SETTINGS);
-
 export default class Control extends ControlChart {
     static uiName = `Control`;
     static identifier = "control";
@@ -363,15 +340,8 @@ export default class Control extends ControlChart {
     static noun = `Control chart`;
 
     static settings = {
-        // Sets the data used by the axiseds. MANDATOR
         ...ZONE_SETTINGS,
         ...GRAPH_DATA_SETTINGS,
-        // Next 3 settings are under the display tab.
-        // ...LINE_SETTINGS,
-        // ...GRAPH_GOAL_SETTINGS,
-        // ...GRAPH_COLORS_SETTINGS,
-        // Covers the AXIS TAB and LABEL TAB
-        // ...GRAPH_AXIS_SETTINGS,
     };
 
     static renderer = controlChartRenderer;
@@ -409,12 +379,15 @@ const getYRange = data => {
     }, {max: -Infinity, min:Infinity});
 }
 
-const getXAxis = xScale => {
+const getXAxis = (xScale, data) => {
     return chart => {
         chart.append('g')
             .attr('transform', `translate(0,${HEIGHT - MARGIN_BOTTOM})`)
             .attr('class', 'axis x')
-            .call(d3.svg.axis().scale(xScale).orient('bottom').innerTickSize(2).tickFormat( d => d ));
+            .call(d3.svg.axis().scale(xScale).orient('bottom').innerTickSize(2).tickFormat( d => {
+                const xd = data[d]
+                return xd ? xd.x : '';
+            }));
     }
 }
 
@@ -437,7 +410,7 @@ const getLines = (data, xScale, yScale) => {
             prevItem = item;
             return lines;
         }
-        const path = `M${xScale(prevItem.x)},${yScale(prevItem.value)}L${xScale(item.x)},${yScale(item.value)}`;
+        const path = `M${xScale(prevItem.index)},${yScale(prevItem.value)}L${xScale(item.index)},${yScale(item.value)}`;
         prevItem = item;
         return [
             ...lines,
@@ -447,6 +420,7 @@ const getLines = (data, xScale, yScale) => {
 }
 
 const getZoneRects = (zones = [], xScale, yScale, dataCount) => {
+    if (!zones) return [];
     return zones.reduce( (rects, zone) => {
         if (!zone.range) return rects;
         const color = d3.rgb(zone.color)
@@ -465,16 +439,14 @@ const getZoneRects = (zones = [], xScale, yScale, dataCount) => {
 }
 
 function renderControlChart(element, data, zones, width, height) {
-
     // The length of the data array is the number of series
     const xScale = getXScale(data.length);
     const yRange = getYRange(data);
     const yScale = getYScale(yRange);
-    const xAxis = getXAxis(xScale);
+    const xAxis = getXAxis(xScale,data);
     const yAxis = getYAxis(yScale);
     const lines = getLines(data, xScale, yScale);
     const zoneRects = getZoneRects(zones, xScale, yScale, data.length);
-
     const chart = d3.select(element)
                     .append('svg')
                     .attr('viewBox', [0,0,WIDTH,HEIGHT])
@@ -493,7 +465,7 @@ function renderControlChart(element, data, zones, width, height) {
 
     // Draw zone lines
     chart.selectAll('path.zone-line')
-        .data(zones)
+        .data(zones || [])
         .enter().append('path')
             .attr('class', 'zone-line')
             .attr('d', d => `M${xScale(0)},${yScale(d.level)},L${xScale(data.length)},${yScale(d.level)}`)
@@ -507,14 +479,14 @@ function renderControlChart(element, data, zones, width, height) {
             .attr('class','line')
             .attr('d', line => line)
             .attr('stroke-width', 2)
-            .attr('stroke', '#444')
+            .attr('stroke', '#555')
             .attr('fill','none')
 
     // Draw points
     chart.selectAll('circle')
         .data(data)
         .enter().append('circle')
-            .attr('cx', d => xScale(d.x))
+            .attr('cx', d => xScale(d.index))
             .attr('cy', d => yScale(d.value))
             .attr('r', 2)
             .attr('stroke-width', 2)
