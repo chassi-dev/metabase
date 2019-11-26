@@ -9,7 +9,7 @@ class ChartSettingZones extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            zones: [{range: ['','']}],
+            zones: props.zones || [{range: ['','']}],
         }
 
     }
@@ -52,8 +52,6 @@ class ChartSettingZones extends React.Component {
     render() {
         const {
             addAnother,
-            value,
-            options,
             onChange,
             className,
             title,
