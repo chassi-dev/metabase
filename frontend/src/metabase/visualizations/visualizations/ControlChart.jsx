@@ -222,7 +222,10 @@ function renderControlChart(element, data, settings, width, height) {
     if (showYAxisLabel) {
         chart.append('text')
             .attr('class', 'y axis-label')
-            .attr('transform', `translate(${height/2}, 0)`)
+            .attr('transform', `rotate(-90)`)
+            .attr('y', 0)
+            .attr('x', -height/2)
+            .attr('dy', '1em')
             .text(settings['graph.y_axis.title_text']);
     }
 }
