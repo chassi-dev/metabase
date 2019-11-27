@@ -12,3 +12,11 @@
     font-family: sans-serif;
     fill: #74838f;
 }
+
+.chassi-control-chart .x.axis-label {
+    text-anchor: middle;
+    font-size: 16px;
+    font-weight: 900;
+    font-family: sans-serif;
+    fill: #74838f;
+}

@@ -37,7 +37,7 @@ function controlChartRenderer(element: Element, props: SankeyProps, ): Deregiste
     const yKey = settings['graph.metrics'][0];
     const chartData = buildChartData(columnValues, xKey, yKey);
 
-    renderControlChart(element, chartData, settings['graph.zones'], width, height);
+    renderControlChart(element, chartData, settings, width, height);
     return () => {
       // dc.chartRegistry.deregister(parent);
     };
@@ -61,7 +61,7 @@ export default class Control extends ControlChart {
 }
 
 const MARGIN_BOTTOM = 50;
-const MARGIN_LEFT = 50;
+const MARGIN_LEFT = 75;
 const MARGIN_RIGHT = 25;
 const MARGIN_TOP = 50;
 
@@ -102,7 +102,7 @@ const getXAxis = (xScale, data, height) => {
     }
 }
 
-const getYAxis = (yScale, width, side = 'left') => {
+const getYAxis = (yScale, width, side = 'left' ) => {
     return chart => {
         let axis = d3.svg.axis().scale(yScale)
         axis = side === 'left' ? axis.orient('left') : axis.orient('right');
@@ -149,13 +149,12 @@ const getZoneRects = (zones = [], xScale, yScale, dataCount) => {
     }, []);
 }
 
-function renderControlChart(element, data, zones, width, height) {
+function renderControlChart(element, data, settings, width, height) {
+    const zones = settings['graph.zones'];
     // The length of the data array is the number of series
     const xScale = getXScale(data.length, width);
     const yRange = getYRange(data);
     const yScale = getYScale(yRange, height);
-    const xAxis = getXAxis(xScale,data, height);
-    const yAxis = getYAxis(yScale, width);
     const lines = getLines(data, xScale, yScale);
     const zoneRects = getZoneRects(zones, xScale, yScale, data.length);
     const chart = d3.select(element)
@@ -204,8 +203,28 @@ function renderControlChart(element, data, zones, width, height) {
             .attr('stroke', d3.rgb(70,130,180))
             .attr('fill', d3.rgb(255,255,255))
 
+    const showYAxisLabel = settings['graph.y_axis.labels_enabled'];
+    const showXAxisLabel = settings['graph.x_axis.labels_enabled'];
+
+    const xAxis = getXAxis(xScale, data, height, );
+    const yAxis = getYAxis(yScale, width,);
+
     chart.call(xAxis);
     chart.call(yAxis);
+
+    if (showXAxisLabel) {
+        chart.append('text')
+            .attr('class', 'x axis-label')
+            .attr('transform', `translate(${width/2}, ${height - 10})`)
+            .text(settings['graph.x_axis.title_text']);
+    }
+
+    if (showYAxisLabel) {
+        chart.append('text')
+            .attr('class', 'y axis-label')
+            .attr('transform', `translate(${height/2}, 0)`)
+            .text(settings['graph.y_axis.title_text']);
+    }
 }
 
 // TEST DATA ONLY
