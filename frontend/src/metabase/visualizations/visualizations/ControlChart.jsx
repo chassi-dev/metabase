@@ -43,10 +43,6 @@ function controlChartRenderer(element: Element, props: SankeyProps, ): Deregiste
     };
 }
 
-import {
-  GRAPH_DATA_SETTINGS,
-} from "../lib/settings/graph";
-
 import { ZONE_SETTINGS } from '../lib/settings/zones';
 
 export default class Control extends ControlChart {
@@ -58,7 +54,7 @@ export default class Control extends ControlChart {
 
     static settings = {
         ...ZONE_SETTINGS,
-        ...GRAPH_DATA_SETTINGS,
+        // ...GRAPH_DATA_SETTINGS,
     };
 
     static renderer = controlChartRenderer;
