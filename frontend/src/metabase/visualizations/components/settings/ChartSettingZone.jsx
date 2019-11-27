@@ -1,6 +1,5 @@
 import React from "react";
 import d3 from 'd3';
-import { t } from "ttag";
 import cx from "classnames";
 import Icon from "metabase/components/Icon";
 
@@ -52,10 +51,10 @@ class ChartSettingZone extends React.Component {
         const { zone: { color, range, level } } = this.props;
         const { zone } = nextProps;
 
-        if (zone.color !== color) this.setState({color: zone.color});
-        if (zone.level !== level) this.setState({level: zone.level});
-        if (zone.range[0] !== range[0]) this.setState({upperLimit: zone.range[0]});
-        if (zone.range[1] !== range[1]) this.setState({lowerLimit: zone.range[1]});
+        if (zone.color !== color) { this.setState({color: zone.color}); }
+        if (zone.level !== level) { this.setState({level: zone.level}); }
+        if (zone.range[0] !== range[0]) { this.setState({upperLimit: zone.range[0]}); }
+        if (zone.range[1] !== range[1]) { this.setState({lowerLimit: zone.range[1]}); }
     }
 
     colorChange = color => {
@@ -87,9 +86,6 @@ class ChartSettingZone extends React.Component {
 
     render() {
         const {
-            value,
-            options,
-            onChange,
             className,
             title,
             onRemove,
