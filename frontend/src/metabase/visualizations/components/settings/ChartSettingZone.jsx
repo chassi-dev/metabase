@@ -107,7 +107,7 @@ class ChartSettingZone extends React.Component {
                       onClick={onRemove}
                     />
                 </div>
-                <div style={{paddingBottom: '7px', display: 'flex', flexDirection: 'row'}}>
+                <div style={{paddingBottom: '7px'}}>
                     <div style={{marginRight: '7px'}}>
                         <ColorPicker
                           colors={this.colors}
@@ -116,29 +116,38 @@ class ChartSettingZone extends React.Component {
                           value={color}
                         />
                     </div>
-                    <ChartSettingInput
-                        type={'number'}
-                        placeholder={'Level'}
-                        onChange={this.levelChange}
-                        value={level}
-                    />
                 </div>
                 <div style={{display: 'flex', flexDirection: 'row'}}>
-                    <div style={{marginRight: '7px'}} >
+                    <div style={{paddingBottom: '7px', marginRight:'6px', display: 'flex', flexDirection: 'column'}}>
+                        <h4>Line:</h4>
                         <ChartSettingInput
                             type={'number'}
-                            placeholder={'Upper Limit'}
-                            onChange={this.upperLimitChange}
-                            value={upperLimit}
+                            placeholder={'Level'}
+                            onChange={this.levelChange}
+                            value={level}
+                            style={{flexBasis: 'auto'}}
                         />
                     </div>
-                    <div>
-                        <ChartSettingInput
-                            type={'number'}
-                            placeholder={'Lower Limit'}
-                            onChange={this.lowerLimitChange}
-                            value={lowerLimit}
-                        />
+                    <div style={{display: 'flex', flexDirection: 'column', paddingLeft: '6px', borderLeft: '1px solid #c3c3c3'}}>
+                        <h4>Range:</h4>
+                        <div style={{display: 'flex', flexDirection: 'row'}}>
+                            <div style={{marginRight: '6px'}} >
+                                <ChartSettingInput
+                                    type={'number'}
+                                    placeholder={'Upper Limit'}
+                                    onChange={this.upperLimitChange}
+                                    value={upperLimit}
+                                />
+                            </div>
+                            <div>
+                                <ChartSettingInput
+                                    type={'number'}
+                                    placeholder={'Lower Limit'}
+                                    onChange={this.lowerLimitChange}
+                                    value={lowerLimit}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
