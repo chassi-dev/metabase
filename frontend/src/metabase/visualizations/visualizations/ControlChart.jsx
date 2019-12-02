@@ -149,6 +149,19 @@ const getZoneRects = (zones = [], xScale, yScale, dataCount) => {
     }, []);
 }
 
+const getZoneLinePositions = (zones=[]) => {
+    return zones.reduce( (lines, zone) => {
+        if (zone.level === null || zone.level === undefined) return lines;
+        return [
+            ...lines,
+            {
+                level: zone.level,
+                color: zone.color,
+            }
+        ]
+    }, []);
+}
+
 function renderControlChart(element, data, settings, width, height) {
     const zones = settings['graph.zones'];
     // The length of the data array is the number of series
@@ -157,6 +170,7 @@ function renderControlChart(element, data, settings, width, height) {
     const yScale = getYScale(yRange, height);
     const lines = getLines(data, xScale, yScale);
     const zoneRects = getZoneRects(zones, xScale, yScale, data.length);
+    const zoneLines = getZoneLinePositions(zones);
     const chart = d3.select(element)
                     .append('svg')
                     .attr('viewBox', [0,0,width,height])
@@ -175,7 +189,7 @@ function renderControlChart(element, data, settings, width, height) {
 
     // Draw zone lines
     chart.selectAll('path.zone-line')
-        .data(zones || [])
+        .data(zoneLines || [])
         .enter().append('path')
             .attr('class', 'zone-line')
             .attr('d', d => `M${xScale(0)},${yScale(d.level)},L${xScale(data.length)},${yScale(d.level)}`)

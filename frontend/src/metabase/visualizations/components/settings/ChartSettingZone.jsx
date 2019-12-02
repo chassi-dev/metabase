@@ -75,7 +75,8 @@ class ChartSettingZone extends React.Component {
 
     handleChange = () => {
         const { color, upperLimit, lowerLimit, level } = this.state;
-        if (!!color && !!upperLimit && !!lowerLimit && !!level) {
+        // Need color AND EITHER the zone range OR line level
+        if (!!color && ((!!upperLimit && !!lowerLimit) || !!level)) {
             this.props.onChange({
                 color,
                 level,
