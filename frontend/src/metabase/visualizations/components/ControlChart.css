@@ -8,6 +8,23 @@
 .chassi-control-chart .x.axis .tick text,
 .chassi-control-chart .y.axis .tick text {
     font-size: 12px;
+    font-weight: 900;
+    font-family: sans-serif;
+    fill: #74838f;
+}
+
+.chassi-control-chart .x.axis-label {
+    text-anchor: middle;
+    font-size: 14px;
+    font-weight: 900;
+    font-family: sans-serif;
+    fill: #74838f;
+}
+
+.chassi-control-chart .y.axis-label {
+    text-anchor: middle;
+    font-size: 14px;
+    font-weight: 900;
     font-family: sans-serif;
     fill: #74838f;
 }

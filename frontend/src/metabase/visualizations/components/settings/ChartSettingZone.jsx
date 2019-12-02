@@ -1,6 +1,5 @@
 import React from "react";
 import d3 from 'd3';
-import { t } from "ttag";
 import cx from "classnames";
 import Icon from "metabase/components/Icon";
 
@@ -52,10 +51,10 @@ class ChartSettingZone extends React.Component {
         const { zone: { color, range, level } } = this.props;
         const { zone } = nextProps;
 
-        if (zone.color !== color) this.setState({color: zone.color});
-        if (zone.level !== level) this.setState({level: zone.level});
-        if (zone.range[0] !== range[0]) this.setState({upperLimit: zone.range[0]});
-        if (zone.range[1] !== range[1]) this.setState({lowerLimit: zone.range[1]});
+        if (zone.color !== color) { this.setState({color: zone.color}); }
+        if (zone.level !== level) { this.setState({level: zone.level}); }
+        if (zone.range[0] !== range[0]) { this.setState({upperLimit: zone.range[0]}); }
+        if (zone.range[1] !== range[1]) { this.setState({lowerLimit: zone.range[1]}); }
     }
 
     colorChange = color => {
@@ -76,7 +75,8 @@ class ChartSettingZone extends React.Component {
 
     handleChange = () => {
         const { color, upperLimit, lowerLimit, level } = this.state;
-        if (!!color && !!upperLimit && !!lowerLimit && !!level) {
+        // Need color AND EITHER the zone range OR line level
+        if (!!color && ((!!upperLimit && !!lowerLimit) || !!level)) {
             this.props.onChange({
                 color,
                 level,
@@ -87,9 +87,6 @@ class ChartSettingZone extends React.Component {
 
     render() {
         const {
-            value,
-            options,
-            onChange,
             className,
             title,
             onRemove,
@@ -110,7 +107,7 @@ class ChartSettingZone extends React.Component {
                       onClick={onRemove}
                     />
                 </div>
-                <div style={{paddingBottom: '7px', display: 'flex', flexDirection: 'row'}}>
+                <div style={{paddingBottom: '7px'}}>
                     <div style={{marginRight: '7px'}}>
                         <ColorPicker
                           colors={this.colors}
@@ -119,29 +116,38 @@ class ChartSettingZone extends React.Component {
                           value={color}
                         />
                     </div>
-                    <ChartSettingInput
-                        type={'number'}
-                        placeholder={'Level'}
-                        onChange={this.levelChange}
-                        value={level}
-                    />
                 </div>
                 <div style={{display: 'flex', flexDirection: 'row'}}>
-                    <div style={{marginRight: '7px'}} >
+                    <div style={{paddingBottom: '7px', marginRight:'6px', display: 'flex', flexDirection: 'column'}}>
+                        <h4>Line:</h4>
                         <ChartSettingInput
                             type={'number'}
-                            placeholder={'Upper Limit'}
-                            onChange={this.upperLimitChange}
-                            value={upperLimit}
+                            placeholder={'Level'}
+                            onChange={this.levelChange}
+                            value={level}
+                            style={{flexBasis: 'auto'}}
                         />
                     </div>
-                    <div>
-                        <ChartSettingInput
-                            type={'number'}
-                            placeholder={'Lower Limit'}
-                            onChange={this.lowerLimitChange}
-                            value={lowerLimit}
-                        />
+                    <div style={{display: 'flex', flexDirection: 'column', paddingLeft: '6px', borderLeft: '1px solid #c3c3c3'}}>
+                        <h4>Range:</h4>
+                        <div style={{display: 'flex', flexDirection: 'row'}}>
+                            <div style={{marginRight: '6px'}} >
+                                <ChartSettingInput
+                                    type={'number'}
+                                    placeholder={'Upper Limit'}
+                                    onChange={this.upperLimitChange}
+                                    value={upperLimit}
+                                />
+                            </div>
+                            <div>
+                                <ChartSettingInput
+                                    type={'number'}
+                                    placeholder={'Lower Limit'}
+                                    onChange={this.lowerLimitChange}
+                                    value={lowerLimit}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
