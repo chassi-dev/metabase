@@ -151,7 +151,7 @@ const getZoneRects = (zones = [], xScale, yScale, dataCount) => {
 
 const getZoneLinePositions = (zones=[]) => {
     return zones.reduce( (lines, zone) => {
-        if (zone.level === null || zone.level === undefined) return lines;
+        if (zone.level === null || zone.level === undefined || zone.level === '') return lines;
         return [
             ...lines,
             {
@@ -202,7 +202,7 @@ function renderControlChart(element, data, settings, width, height) {
         .enter().append('path')
             .attr('class','line')
             .attr('d', line => line)
-            .attr('stroke-width', 2)
+            .attr('stroke-width', 4)
             .attr('stroke', d3.rgb(85,85,85))
             .attr('fill','none')
 
