@@ -281,17 +281,48 @@ function getYAxisSplitLeftAndRight(series, yAxisSplit, yExtents) {
   }));
 }
 
+function getNodes(rows, sourceIndex, targetIndex) {
+    const allNodes = rows.reduce( (nodes, row) => [...nodes,row[sourceIndex], row[targetIndex]], []);
+    // Uniques
+    return[...new Set(allNodes)];
+}
 
+
+function buildChartData({ cols, rows }) {
+    const groupIndex = cols.findIndex( ({ name }) => name === 'group');
+    const sourceIndex = cols.findIndex( ({ name }) => name === 'source');
+    const targetIndex = cols.findIndex( ({ name }) => name === 'target');
+    const valueIndex = cols.findIndex( ({ name }) => name === 'value');
+    const nodeList = getNodes(rows, sourceIndex, targetIndex);
+
+    const nodes = nodeList.map( node => ({name: node}));
+    const links = rows.map( row => {
+        return {
+            group: row[groupIndex],
+            source: nodeList.indexOf(row[sourceIndex]),
+            target: nodeList.indexOf(row[targetIndex]),
+            value: row[valueIndex],
+        }
+    });
+
+    const data = {
+        nodes,
+        links,
+    }
+
+    return data;
+}
 
 // ABOVE IS ALL METABASE STUFF KEPT JUST TO NOT BREAK THE WORLD AND FOR REFERENCE
 //
 // BELOW IS WHAT WE NEED TO RUN OUR CHART
 
+
+
 // THIS FUNCTION HAS A LOT OF METABASE STUFF MUCH MAY BE AB TO BE PULLED OUT
 function sankeyRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
     const { width, height, data } = props;
-    console.warn('props', props);
-
+    const sankeyData = buildChartData(data);
     /*
     /   THIS SECTION USES METABASE CODE ABOVE
     */
@@ -336,7 +367,7 @@ function sankeyRenderer(element: Element, props: SankeyProps, ): DeregisterFunct
     // const charts = dc.barChart(parent);
     // parent.compose(charts);
     // parent.render();
-    renderSandkey(element, testData, width, height);
+    renderSandkey(element, sankeyData, width, height);
     return () => {
       // dc.chartRegistry.deregister(parent);
     };
@@ -371,6 +402,11 @@ export default class Sankey extends SankeyChart {
     static renderer = sankeyRenderer;
 }
 
+const MARGIN_LEFT = 10;
+const MARGIN_RIGHT = 10;
+const MARGIN_TOP = 25;
+const MARGIN_BOTTOM = 25;
+
 function getColorSelector(total) {
   // const colorScale = d3.scale.ordinal(d3.schemeCategory10);
   // need to save based on a name
@@ -384,6 +420,11 @@ function getColorSelector(total) {
   }
 }
 
+function getGroupColorMap(groups) {
+    const colors = d3.scale.category10().range();
+    return groups.reduce( (groupColor, group, index) => ({ ...groupColor, [group]: colors[index] }), {});
+}
+
 function getPath(link) {
     if (link.circular) { return link.path; }
     const path = sankeyLinkHorizontal()
@@ -392,21 +433,31 @@ function getPath(link) {
     return path(link);
 }
 
-const MARGIN_LEFT = 25;
-const MARGIN_RIGHT = 25;
-const MARGIN_TOP = 25;
-const MARGIN_BOTTOM = 75;
+function getGroups(links) {
+    const groups = links.reduce( (groups, link) => {
+        if (link.group === null || link.group === undefined) return groups;
+        return [
+            ...groups,
+            link.group,
+        ]
+    },[]);
+    return [...new Set(groups)];
+}
 
 function renderSandkey(element, sankeyData, width, height) {
+    const groups = getGroups(sankeyData.links);
+    const groupColors = getGroupColorMap(groups);
+
     const { nodes, links } = sankeyCircular()
         .nodeAlign(sankeyJustify)
-        .nodeWidth(15)
+        .nodeWidth(20)
         .nodePadding(10)
-        .extent([[0,0],[width,height]])(sankeyData);
+        .extent([[MARGIN_LEFT,MARGIN_TOP],[width-MARGIN_RIGHT,height-MARGIN_BOTTOM]])(sankeyData);
 
     const getColor = getColorSelector(sankeyData.nodes.length);
 
     const chart = d3.select(element).append('svg').attr('viewBox', [-MARGIN_LEFT,-MARGIN_TOP,width+MARGIN_RIGHT+MARGIN_LEFT,height+MARGIN_BOTTOM+MARGIN_TOP]);
+    // const chart = d3.select(element).append('svg').attr('viewBox', [0,0,width,height]);
     // Draw the nodes
     chart.append('g').attr('stroke','none')
         .selectAll('rect')
@@ -416,8 +467,11 @@ function renderSandkey(element, sankeyData, width, height) {
             .attr('y', d => d.y0)
             .attr('height', d => d.y1-d.y0)
             .attr('width', d => d.x1-d.x0)
-            .attr('fill', (d,i) => getColor(i))
-            .attr('stroke', (d,i) => getColor(i, true))
+            .attr('fill', (d,i) => {
+                if (groups.includes(d.name)) return groupColors[d.name];
+                else return d3.rgb(colors.white).darker(.5).toString()
+            })
+            .attr('stroke', colors.white)
         .append('title')
             .text(d => `${d.name} - ${d.value}`);
 
@@ -429,33 +483,44 @@ function renderSandkey(element, sankeyData, width, height) {
             .style('mix-blend-mode','multiply');
 
     link.append('path').attr('d', getPath)
-        .attr('stroke', d => d.circular ? colors['saturated-red'] : d3.rgb(colors.white).darker(1).toString())
+        .attr('stroke', d => {
+            return groupColors[d.group];
+            // return d.circular ? colors['saturated-red'] : d3.rgb(colors.white).darker(1).toString()
+        })
         .attr('stroke-opacity', 0.5)
         .attr('stroke-width', d => Math.max(2,d.width));
 
     link.append('title').text(d => `${d.source.name} - ${d.target.name}: ${d.value}` );
 
     // Node names
-    chart.append('g').style('font', '1.2vmin sans-serif')
+    chart.append('g')
+            .style('font', '1.2vmin sans-serif')
+            .style('font-weight', 900)
         .selectAll('text')
         .data(nodes)
         .enter().append('text')
             .attr("x", d => {
-                if (d.x0 < MARGIN_LEFT) { return d.x0; }
-                if (d.x0 > width - MARGIN_RIGHT) { return d.x1; }
+                // if (d.x0 < MARGIN_LEFT) { return d.x0; }
+                // if (d.x0 > width - MARGIN_RIGHT) { return d.x1; }
+                if (d.targetLinks.length === 0) { return d.x0; }
+                if (d.sourceLinks.length === 0) { return d.x1; }
                 return (d.x0 + d.x1) / 2;
             })
             .attr("y", d => d.y0 - 10)
             .attr("dy", "0.35em")
             .attr("text-anchor", d => {
-                if (d.x0 < MARGIN_LEFT) { return 'start'; }
-                if (d.x0 > width - MARGIN_RIGHT) { return 'end'; }
+                // if (d.x0 < MARGIN_LEFT) { return 'start'; }
+                // if (d.x0 > width - MARGIN_RIGHT) { return 'end'; }
+                if (d.targetLinks.length === 0) { return 'start'; }
+                if (d.sourceLinks.length === 0) { return 'end'; }
                 return 'middle';
             })
             .text(d => d.name);
 
     // Link info
-    chart.append('g').style('font', '1.2vmin sans-serif')
+    chart.append('g')
+            .style('font', '1.2vmin sans-serif')
+            .style('font-weight', 900)
         .selectAll('text')
         .data(links)
         .enter().append('text')
