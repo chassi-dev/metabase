@@ -289,7 +289,7 @@ function getNodes(rows, sourceIndex, targetIndex) {
 
 
 function buildChartData({ cols, rows }) {
-    const groupIndex = cols.findIndex( ({ name }) => name === 'group');
+    const groupIndex = cols.findIndex( ({ name }) => name === 'grouping');
     const sourceIndex = cols.findIndex( ({ name }) => name === 'source');
     const targetIndex = cols.findIndex( ({ name }) => name === 'target');
     const valueIndex = cols.findIndex( ({ name }) => name === 'value');
