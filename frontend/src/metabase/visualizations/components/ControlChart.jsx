@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import CardRenderer from "./CardRenderer";
 import LegendHeader from "./LegendHeader";
 import { TitleLegendHeader } from "./TitleLegendHeader";
+import { ChartSettingsError } from "metabase/visualizations/lib/errors";
 
 import "./LineAreaBarChart.css";
 import './ControlChart.css';
@@ -50,65 +51,26 @@ export default class ControlChart extends Component {
   }
 
   static checkRenderable(series, settings) {
-      console.warn('TODO: update CONTROL CHART checkRenderable');
+      if (!settings['graph.dimensions'][0] || !settings['graph.metrics'][0]) throw new ChartSettingsError();
   }
 
   static seriesAreCompatible(initialSeries, newSeries) {
-    const initialSettings = getComputedSettingsForSeries([initialSeries]);
-    const newSettings = getComputedSettingsForSeries([newSeries]);
-
-    const initialDimensions = getColumnsFromNames(
-      initialSeries.data.cols,
-      initialSettings["graph.dimensions"],
-    );
-    const newDimensions = getColumnsFromNames(
-      newSeries.data.cols,
-      newSettings["graph.dimensions"],
-    );
-    const newMetrics = getColumnsFromNames(
-      newSeries.data.cols,
-      newSettings["graph.metrics"],
-    );
-
-    // must have at least one dimension and one metric
-    if (newDimensions.length === 0 || newMetrics.length === 0) {
-      return false;
-    }
-
-    // all metrics must be numeric
-    if (!_.all(newMetrics, isNumeric)) {
-      return false;
-    }
-
-    // both or neither primary dimension must be dates
-    if (isDate(initialDimensions[0]) !== isDate(newDimensions[0])) {
-      return false;
-    }
-
-    // both or neither primary dimension must be numeric
-    // a timestamp field is both date and number so don't enforce the condition if both fields are dates; see #2811
-    if (
-      isNumeric(initialDimensions[0]) !== isNumeric(newDimensions[0]) &&
-      !(isDate(initialDimensions[0]) && isDate(newDimensions[0]))
-    ) {
-      return false;
-    }
-
-    return true;
+      return true;
   }
 
   static placeholderSeries = [
     {
       card: {
-        display: "line",
+        display: "control",
         visualization_settings: {},
         dataset_query: { type: "null" },
       },
       data: {
-        rows: _.range(0, 11).map(i => [i, i]),
+        rows: _.range(0, 11).map(i => [i, i, '{"{\"color\": \"#199600\", \"line\": 5, \"upper\": 6, \"lower\": 4}","{\"color\": \"#fae100\", \"line\": 6, \"upper\": 8, \"lower\": 6}","{\"color\": \"#fae100\", \"line\": 4, \"upper\": 4, \"lower\": 2}","{\"color\": \"#cf3935\", \"line\": 8, \"upper\": 10, \"lower\": 8}","{\"color\": \"#cf3935\", \"line\": 2, \"upper\": 2, \"lower\": 0}"}']),
         cols: [
           { name: "x", base_type: "type/Integer" },
           { name: "y", base_type: "type/Integer" },
+          { name: "control_chart_zones", base_type: 'type/Array' },
         ],
       },
     },
