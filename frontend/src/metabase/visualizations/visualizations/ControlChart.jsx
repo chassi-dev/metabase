@@ -8,7 +8,7 @@ type SankeyProps = {
   maxSeries: number,
 };
 
-function buildChartData(columnValues, xKey, yKey) {
+function buildChartData(columnValues, xKey, yKey, zonesKey) {
     if (!xKey || !yKey) { return []; }
     const xValues = columnValues[xKey];
     return xValues.reduce( (data, xValue, index) => {
@@ -18,6 +18,7 @@ function buildChartData(columnValues, xKey, yKey) {
                 x: xValue,
                 value: columnValues[yKey][index],
                 index,
+                zones: columnValues[zonesKey] ? columnValues[zonesKey][index] : null,
             }
         ]
     }, []);
@@ -25,7 +26,7 @@ function buildChartData(columnValues, xKey, yKey) {
 
 function controlChartRenderer(element: Element, props: SankeyProps, ): DeregisterFunction {
     const { width, height, data, settings } = props;
-    console.warn('props',props);
+    console.warn('PROPS', props)
     const columnValues = data.cols.reduce( (colVals, col, index) => {
         const values = data.rows.map( row => row[index]);
         return {
@@ -33,9 +34,11 @@ function controlChartRenderer(element: Element, props: SankeyProps, ): Deregiste
             [col.name]: values,
         }
     },{});
-    const xKey = settings['graph.dimensions'][0];
-    const yKey = settings['graph.metrics'][0];
-    const chartData = buildChartData(columnValues, xKey, yKey);
+
+    const xKey = settings['graph.dimensions'][0] || 'x';
+    const yKey = settings['graph.metrics'][0] || 'y';
+    const zonesKey = settings['graph.zones'][0] || '';
+    const chartData = buildChartData(columnValues, xKey, yKey, zonesKey);
 
     renderControlChart(element, chartData, settings, width, height);
     return () => {
@@ -130,6 +133,28 @@ const getLines = (data, xScale, yScale) => {
     }, []);
 }
 
+const parseZonesFromQuery = (zones = []) => {
+    if (!zones) { return []; }
+    // Coming in from the query the format is string like:
+    // {"{\"color\": \"#cf3935\", \"line\": \"0\", \"upper\": \"20\", \"lower\": \"-20\"}","{\"color\": \"#cf3935\", \"line\": \"0\", \"upper\": \"20\", \"lower\": \"-20\"}"}
+    // Remove the starting and trailing curly braces and double quotes {"..."}
+    let parsedZones = zones.substring(2,zones.length-2);
+    // remove the quotes between each object. Add a vertical bar for splitting at correct comma later
+    parsedZones = parsedZones.replace(/\",\"/g, ',|');
+    // Remove all \ for escaping quotes
+    parsedZones = parsedZones.replace(/\\/g,'');
+    // split on comma (And vertical bar) which is between each object
+    parsedZones = parsedZones.split(',|')
+    // Parse each JSON string.
+    parsedZones = parsedZones.map( r => JSON.parse(r) );
+    // Map to expecte zone format with range array
+    return parsedZones.map( zone => ({
+        ...zone,
+        line: zone.level,
+        range: [zone.upper, zone.lower],
+    }));
+}
+
 const getZoneRects = (zones = [], xScale, yScale, dataCount) => {
     if (!zones) { return []; }
     return zones.reduce( (rects, zone) => {
@@ -163,7 +188,9 @@ const getZoneLinePositions = (zones=[]) => {
 }
 
 function renderControlChart(element, data, settings, width, height) {
-    const zones = settings['graph.zones'];
+    // If there is zone data from query use that. Otherwise use the settings zones
+    const zones = (data[0] && data[0].zones) ? parseZonesFromQuery(data[0].zones) : settings['control.zones'];
+    console.warn('ZONES', zones);
     // The length of the data array is the number of series
     const xScale = getXScale(data.length, width);
     const yRange = getYRange(data);
