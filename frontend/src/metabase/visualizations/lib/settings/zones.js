@@ -8,13 +8,13 @@ import {
 import { getFriendlyName } from "metabase/visualizations/lib/utils";
 
 export const ZONE_SETTINGS = {
-    "graph.zones": {
+    "control.zones": {
         section: t`Zones`,
         widget: "zones",
         getProps: (a, settings) => {
             return {
                 addAnother: t`Add another zone...`,
-                zones: settings['graph.zones'],
+                zones: settings['control.zones'],
             };
         },
         getDefault: () => [],
@@ -23,7 +23,10 @@ export const ZONE_SETTINGS = {
         section: t`Data`,
         title: t`X-axis`,
         widget: "fields",
-        getDefault: () => [null],
+        getDefault: ([{ data }]) => {
+            const found = data.cols.find( col => col.name === 'x')
+            return [found ? found.name : null];
+        },
         persistDefault: true,
         getProps: ([{ card, data }], vizSettings) => {
             const value = vizSettings["graph.dimensions"];
@@ -43,13 +46,35 @@ export const ZONE_SETTINGS = {
         section: t`Data`,
         title: t`Y-axis`,
         widget: "fields",
-        getDefault: () => [null],
+        getDefault: ([{ data }]) => {
+            const found = data.cols.find( col => col.name === 'y')
+            return [found ? found.name : null];
+        },
         persistDefault: true,
         getProps: ([{ card, data }], vizSettings) => {
             const value = vizSettings["graph.dimensions"];
             const options = data.cols
                                 .filter(isMetric)
                                 .map(getOptionFromColumn);
+            return {
+                options,
+                columns: data.cols,
+            };
+        },
+        useRawSeries: true,
+    },
+    "graph.zones": {
+        section: t`Data`,
+        title: t`Zones`,
+        widget: "fields",
+        getDefault: ([{ data }]) => {
+            const found = data.cols.find( col => col.name === 'control_chart_zones')
+            return [found ? found.name : null];
+        },
+        persistDefault: true,
+        getProps: ([{ card, data }], vizSettings) => {
+            const value = vizSettings["graph.dimensions"];
+            const options = data.cols.map(getOptionFromColumn);
             return {
                 options,
                 columns: data.cols,
