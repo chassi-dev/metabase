@@ -11,14 +11,10 @@ import "./LineAreaBarChart.css";
 import './ControlChart.css';
 
 import {
-  isNumeric,
-  isDate,
   isDimension,
   isMetric,
 } from "metabase/lib/schema_metadata";
 import { MAX_SERIES } from "metabase/visualizations/lib/utils";
-
-import { getComputedSettingsForSeries } from "metabase/visualizations/lib/settings/visualization";
 
 import _ from "underscore";
 import cx from "classnames";
@@ -51,7 +47,7 @@ export default class ControlChart extends Component {
   }
 
   static checkRenderable(series, settings) {
-      if (!settings['graph.dimensions'][0] || !settings['graph.metrics'][0]) throw new ChartSettingsError();
+      if (!settings['graph.dimensions'][0] || !settings['graph.metrics'][0]) { throw new ChartSettingsError(); }
   }
 
   static seriesAreCompatible(initialSeries, newSeries) {
@@ -83,48 +79,6 @@ export default class ControlChart extends Component {
     isDashboard: PropTypes.bool,
   };
 
-  static defaultProps = {};
-
-  getFidelity() {
-    const fidelity = { x: 0, y: 0 };
-    const size = this.props.gridSize || { width: Infinity, height: Infinity };
-    if (size.width >= 5) {
-      fidelity.x = 2;
-    } else if (size.width >= 4) {
-      fidelity.x = 1;
-    }
-    if (size.height >= 5) {
-      fidelity.y = 2;
-    } else if (size.height >= 4) {
-      fidelity.y = 1;
-    }
-
-    return fidelity;
-  }
-
-  getSettings() {
-    const fidelity = this.getFidelity();
-
-    const settings = { ...this.props.settings };
-
-    // smooth interpolation at smallest x/y fidelity
-    if (fidelity.x === 0 && fidelity.y === 0) {
-      settings["line.interpolate"] = "cardinal";
-    }
-
-    // no axis in < 1 fidelity
-    if (fidelity.x < 1 || fidelity.y < 1) {
-      settings["graph.y_axis.axis_enabled"] = false;
-    }
-
-    // no labels in < 2 fidelity
-    if (fidelity.x < 2 || fidelity.y < 2) {
-      settings["graph.y_axis.labels_enabled"] = false;
-    }
-
-    return settings;
-  }
-
   render() {
     const {
       series,
@@ -137,9 +91,8 @@ export default class ControlChart extends Component {
       onAddSeries,
       onEditSeries,
       onRemoveSeries,
+      settings,
     } = this.props;
-
-    const settings = this.getSettings();
 
     let multiseriesHeaderSeries;
     if (series.length > 1 || onAddSeries || onEditSeries || onRemoveSeries) {
@@ -190,11 +143,4 @@ export default class ControlChart extends Component {
       </div>
     );
   }
-}
-
-function getColumnsFromNames(cols, names) {
-  if (!names) {
-    return [];
-  }
-  return names.map(name => _.findWhere(cols, { name }));
 }

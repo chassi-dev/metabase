@@ -5,8 +5,6 @@ import {
   isMetric,
 } from "metabase/lib/schema_metadata";
 
-import { getFriendlyName } from "metabase/visualizations/lib/utils";
-
 export const ZONE_SETTINGS = {
     "control.zones": {
         section: t`Zones`,
@@ -28,8 +26,7 @@ export const ZONE_SETTINGS = {
             return [found ? found.name : null];
         },
         persistDefault: true,
-        getProps: ([{ card, data }], vizSettings) => {
-            const value = vizSettings["graph.dimensions"];
+        getProps: ([{ card, data }]) => {
             const options = data.cols
                                 .filter(isDimension)
                                 .map(getOptionFromColumn);
@@ -51,8 +48,7 @@ export const ZONE_SETTINGS = {
             return [found ? found.name : null];
         },
         persistDefault: true,
-        getProps: ([{ card, data }], vizSettings) => {
-            const value = vizSettings["graph.dimensions"];
+        getProps: ([{ card, data }]) => {
             const options = data.cols
                                 .filter(isMetric)
                                 .map(getOptionFromColumn);
@@ -72,8 +68,7 @@ export const ZONE_SETTINGS = {
             return [found ? found.name : null];
         },
         persistDefault: true,
-        getProps: ([{ card, data }], vizSettings) => {
-            const value = vizSettings["graph.dimensions"];
+        getProps: ([{ card, data }]) => {
             const options = data.cols.map(getOptionFromColumn);
             return {
                 options,
