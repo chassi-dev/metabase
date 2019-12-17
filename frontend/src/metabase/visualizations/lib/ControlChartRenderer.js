@@ -45,7 +45,6 @@ const getXAxis = (xScale, data, visHeight, visWidth, label) => {
     return chart => {
         let maxTickHeight = 0;
         const axis = chart.append('g')
-            // .attr('transform', `translate(0,${visHeight - MARGIN.bottom})`)
             .attr('class', 'axis x')
             .call(d3.svg.axis().scale(xScale).orient('bottom').innerTickSize(2).tickFormat( d => {
                 const xd = data[d]
@@ -232,20 +231,9 @@ function renderControlChart(element, data, settings, width, height) {
             .attr('fill', d3.rgb(255,255,255))
 
     const showYAxisLabel = settings['graph.y_axis.labels_enabled'];
-    // const showXAxisLabel = settings['graph.x_axis.labels_enabled'];
-
-    // const xAxis = getXAxis(xScale, data, height, width, showXAxisLabel && settings['graph.x_axis.title_text']);
     const yAxis = getYAxis(yScale, width,);
 
-    // chart.call(xAxis);
     chart.call(yAxis);
-
-    // if (showXAxisLabel) {
-    //     chart.append('text')
-    //         .attr('class', 'x axis-label')
-    //         .attr('transform', `translate(${width/2}, ${height - 10})`)
-    //         .text(settings['graph.x_axis.title_text']);
-    // }
 
     if (showYAxisLabel) {
         chart.append('text')
@@ -276,7 +264,6 @@ function buildChartData(columnValues, xKey, yKey, zonesKey) {
 
 export default function controlChartRenderer(element: Element, props: SankeyProps, ) {
     const { width, height, data, settings } = props;
-    console.warn('PROPS', props)
     const columnValues = data.cols.reduce( (colVals, col, index) => {
         const values = data.rows.map( row => row[index]);
         return {
