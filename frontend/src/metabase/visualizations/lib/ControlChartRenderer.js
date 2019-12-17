@@ -4,17 +4,19 @@ type SankeyProps = {
   chartType: "sankey",
 };
 
-const MARGIN_BOTTOM = 50;
-const MARGIN_LEFT = 75;
-const MARGIN_RIGHT = 25;
-const MARGIN_TOP = 50;
+const MARGIN = {
+    bottom: 100,
+    left: 75,
+    right: 25,
+    top: 50,
+}
 
 const DATA_BUFFER_PCT = 10;
 
 const getXScale = (count, width) => {
     return d3.scale.linear()
         .domain([0, count])
-        .range([MARGIN_LEFT, width - MARGIN_RIGHT]);
+        .range([MARGIN.left, width - MARGIN.right]);
 }
 
 const getYScale = (yRange, height, bufferPct = DATA_BUFFER_PCT) => {
@@ -22,7 +24,7 @@ const getYScale = (yRange, height, bufferPct = DATA_BUFFER_PCT) => {
     const buffer = (max - min) * (bufferPct/100);
     return d3.scale.linear()
         .domain([min - buffer, max +  buffer])
-        .range([height - MARGIN_BOTTOM, MARGIN_TOP]);
+        .range([height - MARGIN.bottom, MARGIN.top]);
 }
 
 const getYRange = data => {
@@ -34,15 +36,55 @@ const getYRange = data => {
     }, {max: -Infinity, min:Infinity});
 }
 
-const getXAxis = (xScale, data, height) => {
+const getXAxis = (xScale, data, visHeight, visWidth, label) => {
+    const axisLabelMargin = 25;
+    let angle = 0;
+    const axisWidth = visWidth - MARGIN.right - MARGIN.left;
+    const tickWidth = axisWidth / data.length-1;
+
     return chart => {
-        chart.append('g')
-            .attr('transform', `translate(0,${height - MARGIN_BOTTOM})`)
+        let maxTickHeight = 0;
+        const axis = chart.append('g')
+            // .attr('transform', `translate(0,${visHeight - MARGIN.bottom})`)
             .attr('class', 'axis x')
             .call(d3.svg.axis().scale(xScale).orient('bottom').innerTickSize(2).tickFormat( d => {
                 const xd = data[d]
                 return xd ? xd.x : '';
             }));
+
+        chart.selectAll('.x.axis .tick text')
+            .each( function(d,i,a) {
+                const { width, height } = this.getBBox();
+                console.warn('tick w:', width, ', tw:', tickWidth, ', h:', height);
+                if (angle !== -90 && width >= tickWidth) angle = -45;
+                if (height >= tickWidth) angle = -90;
+            })
+            .attr('transform', function(d, i) {
+                const { width, height } = this.getBBox();
+                const xTranslate = (height/2 * (angle/90));
+                return `translate(${xTranslate}, 0) rotate(${angle})`;
+            })
+            .style('text-anchor', () => {
+                if (angle < 0) { return 'end'; }
+                if (angle > 0) { return 'start' }
+                return 'middle';
+            });
+
+        chart.selectAll('.x.axis .tick')
+            .each( function() {
+                // get the max tick height for bottom margin computation
+                const { height } = this.getBBox();
+                if (height > maxTickHeight) maxTickHeight = height;
+            })
+
+        if (label)
+            chart.append('text')
+                .attr('class', 'x axis-label')
+                .attr('transform', `translate(${visWidth/2}, ${visHeight - 10})`)
+                .text(label);
+
+        MARGIN.bottom = maxTickHeight + axisLabelMargin;
+        axis.attr('transform', `translate(0,${visHeight - MARGIN.bottom})`);
     }
 }
 
@@ -50,7 +92,7 @@ const getYAxis = (yScale, width, side = 'left' ) => {
     return chart => {
         let axis = d3.svg.axis().scale(yScale)
         axis = side === 'left' ? axis.orient('left') : axis.orient('right');
-        const translate = side === 'left' ? MARGIN_LEFT : width-MARGIN_RIGHT;
+        const translate = side === 'left' ? MARGIN.left : width-MARGIN.right;
         chart.append('g')
             .attr('transform', `translate(${translate}, 0)`)
             .attr('class', 'axis y')
@@ -131,18 +173,22 @@ const getZoneLinePositions = (zones=[]) => {
 function renderControlChart(element, data, settings, width, height) {
     // If there is zone data from query use that. Otherwise use the settings zones
     const zones = (data[0] && data[0].zones) ? parseZonesFromQuery(data[0].zones) : settings['control.zones'];
-
     // The length of the data array is the number of series
     const xScale = getXScale(data.length, width);
+    const chart = d3.select(element)
+                    .append('svg')
+                    .attr('viewBox', [0,0,width,height])
+                    .attr('class', 'chassi-control-chart');
+
+    const showXAxisLabel = settings['graph.x_axis.labels_enabled'];
+    const xAxis = getXAxis(xScale, data, height, width, showXAxisLabel && settings['graph.x_axis.title_text']);
+    chart.call(xAxis);
+
     const yRange = getYRange(data);
     const yScale = getYScale(yRange, height);
     const lines = getLines(data, xScale, yScale);
     const zoneRects = getZoneRects(zones, xScale, yScale, data.length);
     const zoneLines = getZoneLinePositions(zones);
-    const chart = d3.select(element)
-                    .append('svg')
-                    .attr('viewBox', [0,0,width,height])
-                    .attr('class', 'chassi-control-chart');
 
     // Draw zone Rects
     chart.selectAll('rect')
@@ -186,20 +232,20 @@ function renderControlChart(element, data, settings, width, height) {
             .attr('fill', d3.rgb(255,255,255))
 
     const showYAxisLabel = settings['graph.y_axis.labels_enabled'];
-    const showXAxisLabel = settings['graph.x_axis.labels_enabled'];
+    // const showXAxisLabel = settings['graph.x_axis.labels_enabled'];
 
-    const xAxis = getXAxis(xScale, data, height, );
+    // const xAxis = getXAxis(xScale, data, height, width, showXAxisLabel && settings['graph.x_axis.title_text']);
     const yAxis = getYAxis(yScale, width,);
 
-    chart.call(xAxis);
+    // chart.call(xAxis);
     chart.call(yAxis);
 
-    if (showXAxisLabel) {
-        chart.append('text')
-            .attr('class', 'x axis-label')
-            .attr('transform', `translate(${width/2}, ${height - 10})`)
-            .text(settings['graph.x_axis.title_text']);
-    }
+    // if (showXAxisLabel) {
+    //     chart.append('text')
+    //         .attr('class', 'x axis-label')
+    //         .attr('transform', `translate(${width/2}, ${height - 10})`)
+    //         .text(settings['graph.x_axis.title_text']);
+    // }
 
     if (showYAxisLabel) {
         chart.append('text')
