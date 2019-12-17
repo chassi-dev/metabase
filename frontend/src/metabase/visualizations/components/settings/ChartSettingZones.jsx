@@ -56,7 +56,7 @@ class ChartSettingZones extends React.Component {
         const { zones } = this.state;
 
         return (
-            <div className={cx(className, "align-center")} style={{paddingBottom: '7px'}}>
+            <div className={cx(className, "align-center")} style={{paddingBottom: '7px', minHeight: '200px'}}>
                 {zones.map( (zone, index) => (
                     <ChartSettingZone
                         key={index}
