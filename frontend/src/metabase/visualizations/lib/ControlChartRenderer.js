@@ -54,7 +54,6 @@ const getXAxis = (xScale, data, visHeight, visWidth, label) => {
         chart.selectAll('.x.axis .tick text')
             .each( function(d,i,a) {
                 const { width, height } = this.getBBox();
-                console.warn('tick w:', width, ', tw:', tickWidth, ', h:', height);
                 if (angle !== -90 && width >= tickWidth) angle = -45;
                 if (height >= tickWidth) angle = -90;
             })
