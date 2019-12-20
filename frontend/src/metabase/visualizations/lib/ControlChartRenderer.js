@@ -1,7 +1,7 @@
 import d3 from "d3"
 
-type SankeyProps = {
-  chartType: "sankey",
+type ControlChartProps = {
+  chartType: "control-chart",
 };
 
 const MARGIN = {
@@ -54,11 +54,11 @@ const getXAxis = (xScale, data, visHeight, visWidth, label) => {
         chart.selectAll('.x.axis .tick text')
             .each( function(d,i,a) {
                 const { width, height } = this.getBBox();
-                if (angle !== -90 && width >= tickWidth) angle = -45;
-                if (height >= tickWidth) angle = -90;
+                if (angle !== -90 && width >= tickWidth) { angle = -45; }
+                if (height >= tickWidth) { angle = -90; }
             })
             .attr('transform', function(d, i) {
-                const { width, height } = this.getBBox();
+                const { height } = this.getBBox();
                 const xTranslate = (height/2 * (angle/90));
                 return `translate(${xTranslate}, 0) rotate(${angle})`;
             })
@@ -72,14 +72,15 @@ const getXAxis = (xScale, data, visHeight, visWidth, label) => {
             .each( function() {
                 // get the max tick height for bottom margin computation
                 const { height } = this.getBBox();
-                if (height > maxTickHeight) maxTickHeight = height;
+                if (height > maxTickHeight) { maxTickHeight = height; }
             })
 
-        if (label)
+        if (label){
             chart.append('text')
                 .attr('class', 'x axis-label')
                 .attr('transform', `translate(${visWidth/2}, ${visHeight - 10})`)
                 .text(label);
+        }
 
         MARGIN.bottom = maxTickHeight + axisLabelMargin;
         axis.attr('transform', `translate(0,${visHeight - MARGIN.bottom})`);
@@ -168,24 +169,83 @@ const getZoneLinePositions = (zones=[]) => {
     }, []);
 }
 
-function renderControlChart(element, data, settings, width, height) {
+const getHoverObject = (row, event, props) => {
+    if (!row) { return {}; }
+    const { data: { cols }, settings } = props;
+
+    const yKey = settings['graph.metrics'][0] || 'y';
+    const zonesKey = settings['graph.zones'][0] || '';
+    // Get the index of the column with the y value (metric)
+    const yIndex = cols.findIndex( col => col.name === yKey);
+
+    // Remove column containing zones array. Do not want in hover pop up
+    const filteredColumns = cols.filter( col => col.name !== zonesKey );
+    const dimensions = filteredColumns.map( (column, index) => ({ column, value: row[index]}));
+    const data = row.reduce( (list, value, index) => {
+        const col = cols[index];
+        if (!filteredColumns.includes(col)) { return list; }
+        return [
+            ...list,
+            {
+                key: col.name,
+                value,
+                col
+            }
+        ];
+    },[]);
+
+    return {
+        data,
+        dimensions,
+        element: event.target,
+        event: event,
+        index: -1,
+        value: row[yIndex],
+        column: cols[yIndex],
+    }
+}
+
+const getClickObject = (row, event, props) => {
+    if (!row) { return {}; }
+    const { data: { cols }, settings } = props;
+
+    const yKey = settings['graph.metrics'][0] || 'y';
+    const zonesKey = settings['graph.zones'][0] || '';
+    // Get the index of the column with the y value (metric)
+    const yIndex = cols.findIndex( col => col.name === yKey);
+
+    // Remove column containing zones array. Do not want in hover pop up
+    const filteredColumns = cols.filter( col => col.name !== zonesKey );
+    const dimensions = filteredColumns.map( (column, index) => ({ column, value: row[index]}));
+    return {
+        column: cols[yIndex],
+        dimensions,
+        element: event.target,
+        event: event,
+        value: row[yIndex],
+    }
+}
+
+function renderControlChart(element, chartData, props) {
+    const { data, settings, width, height } = props;
     // If there is zone data from query use that. Otherwise use the settings zones
-    const zones = (data[0] && data[0].zones) ? parseZonesFromQuery(data[0].zones) : settings['control.zones'];
+    const zones = (chartData[0] && chartData[0].zones) ? parseZonesFromQuery(chartData[0].zones) : settings['control.zones'];
     // The length of the data array is the number of series
-    const xScale = getXScale(data.length, width);
+    const xScale = getXScale(chartData.length, width);
     const chart = d3.select(element)
                     .append('svg')
                     .attr('viewBox', [0,0,width,height])
                     .attr('class', 'chassi-control-chart');
 
+    // Draw X axis first to get bottom margin based on axis labels
     const showXAxisLabel = settings['graph.x_axis.labels_enabled'];
-    const xAxis = getXAxis(xScale, data, height, width, showXAxisLabel && settings['graph.x_axis.title_text']);
+    const xAxis = getXAxis(xScale, chartData, height, width, showXAxisLabel && settings['graph.x_axis.title_text']);
     chart.call(xAxis);
 
-    const yRange = getYRange(data);
+    const yRange = getYRange(chartData);
     const yScale = getYScale(yRange, height);
-    const lines = getLines(data, xScale, yScale);
-    const zoneRects = getZoneRects(zones, xScale, yScale, data.length);
+    const lines = getLines(chartData, xScale, yScale);
+    const zoneRects = getZoneRects(zones, xScale, yScale, chartData.length);
     const zoneLines = getZoneLinePositions(zones);
 
     // Draw zone Rects
@@ -204,7 +264,7 @@ function renderControlChart(element, data, settings, width, height) {
         .data(zoneLines || [])
         .enter().append('path')
             .attr('class', 'zone-line')
-            .attr('d', d => `M${xScale(0)},${yScale(d.level)},L${xScale(data.length)},${yScale(d.level)}`)
+            .attr('d', d => `M${xScale(0)},${yScale(d.level)},L${xScale(chartData.length)},${yScale(d.level)}`)
             .attr('stroke', d => d.color)
             .attr('stroke-width', 2)
 
@@ -220,7 +280,7 @@ function renderControlChart(element, data, settings, width, height) {
 
     // Draw points
     chart.selectAll('circle')
-        .data(data)
+        .data(chartData)
         .enter().append('circle')
             .attr('cx', d => xScale(d.index))
             .attr('cy', d => yScale(d.value))
@@ -228,6 +288,30 @@ function renderControlChart(element, data, settings, width, height) {
             .attr('stroke-width', 2)
             .attr('stroke', d3.rgb(70,130,180))
             .attr('fill', d3.rgb(255,255,255))
+
+    // Draw non visible event points larger than visible points for easy dexterity
+    chart.selectAll('circle.interaction')
+        .data(chartData)
+        .enter().append('circle')
+            .attr('class', 'interaction')
+            .attr('cx', d => xScale(d.index))
+            .attr('cy', d => yScale(d.value))
+            .attr('r', 5)
+            .on('mouseover', function(d,i) {
+                const event = d3.event;
+                const row = data.rows[i];
+                const hover = getHoverObject(row, event, props);
+                props.onHoverChange(hover);
+            })
+            .on('mouseleave', function() {
+                props.onHoverChange({});
+            })
+            .on('click', function(d,i) {
+                const event = d3.event;
+                const row = data.rows[i];
+                const clickObject = getClickObject(row, event, props);
+                props.onVisualizationClick(clickObject);
+            });
 
     const showYAxisLabel = settings['graph.y_axis.labels_enabled'];
     const yAxis = getYAxis(yScale, width,);
@@ -261,8 +345,8 @@ function buildChartData(columnValues, xKey, yKey, zonesKey) {
     }, []);
 }
 
-export default function controlChartRenderer(element: Element, props: SankeyProps, ) {
-    const { width, height, data, settings } = props;
+export default function controlChartRenderer(element: Element, props: ControlChartProps, ) {
+    const { data, settings } = props;
     const columnValues = data.cols.reduce( (colVals, col, index) => {
         const values = data.rows.map( row => row[index]);
         return {
@@ -276,5 +360,5 @@ export default function controlChartRenderer(element: Element, props: SankeyProp
     const zonesKey = settings['graph.zones'][0] || '';
     const chartData = buildChartData(columnValues, xKey, yKey, zonesKey);
 
-    renderControlChart(element, chartData, settings, width, height);
+    renderControlChart(element, chartData, props);
 }

@@ -28,3 +28,7 @@
     font-family: sans-serif;
     fill: #74838f;
 }
+
+.chassi-control-chart circle.interaction {
+    opacity: 0;
+}
